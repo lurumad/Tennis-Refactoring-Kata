@@ -1,3 +1,5 @@
+using System;
+
 namespace Tennis
 {
     public class TennisGame1 : ITennisGame
@@ -43,17 +45,33 @@ namespace Tennis
                 return new TieBreakScoring(player1Score, player2Score);
             }
 
+            if (PlayerHasAdvantage(player1Score, player2Score))
+            {
+                return new WinScoring(player1Score, player2Score);
+            }
+
             return new GeneralScore(player1Score, player2Score);
+        }
+        
+        private bool Draw(int player1Score, int player2Score)
+        {
+            return player1Score == player2Score;
         }
         
         private bool TieBreak(int player1Score, int player2Score)
         {
+            return PlayerHasAdvantage(player1Score, player2Score) 
+                && PlayerIsAheadByOnePoint(player1Score, player2Score);
+        }
+
+        private bool PlayerHasAdvantage(int player1Score, int player2Score)
+        {
             return player1Score >= 4 || player2Score >= 4;
         }
 
-        private bool Draw(int player1Score, int player2Score)
+        private bool PlayerIsAheadByOnePoint(int player1Score, int player2Score)
         {
-            return player1Score == player2Score;
+            return Math.Abs(player1Score - player2Score) == 1;
         }
     }
 
@@ -99,13 +117,24 @@ namespace Tennis
 
         public override string Score()
         {
-            return (player1Score - player2Score) switch
-            {
-                1 => "Advantage player1",
-                -1 => "Advantage player2",
-                >= 2 => "Win for player1",
-                _ => "Win for player2"
-            };
+            return player1Score > player2Score
+                ? "Advantage player1"
+                : "Advantage player2";
+        }
+    }
+    
+    public class WinScoring : Scoring
+    {
+        public WinScoring(int player1Score, int player2Score) 
+            : base(player1Score, player2Score)
+        {
+        }
+
+        public override string Score()
+        {
+            return player1Score > player2Score
+                ? "Win for player1"
+                : "Win for player2";
         }
     }
     
