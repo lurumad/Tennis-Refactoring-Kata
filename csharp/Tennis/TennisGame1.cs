@@ -4,8 +4,8 @@ namespace Tennis
 {
     public class TennisGame1 : ITennisGame
     {
-        private int player1Score;
-        private int player2Score;
+        private readonly Player player1;
+        private readonly Player player2;
         private readonly string player1Name;
         private readonly string player2Name;
         private readonly Referee referee;
@@ -13,44 +13,72 @@ namespace Tennis
         public TennisGame1(string player1Name, string player2Name)
         {
             this.player1Name = player1Name;
+            player1 = new Player(player1Name);
             this.player2Name = player2Name;
+            player2 = new Player(player2Name);
             referee = new Referee();
         }
 
         public void WonPoint(string playerName)
         {
-            if (playerName == player1Name)
-                player1Score += 1;
-            else if (playerName == player2Name)
-                player2Score += 1;
+            if (playerName == "player1")
+            {
+                player1.Scores();
+            }
+            else
+            {
+                player2.Scores();
+            }
         }
 
         public string GetScore()
         {
-            return referee.Scores(player1Score, player2Score).Score();
+            return referee.Determine(player1, player2).Score();
+        }
+    }
+
+    public class Player
+    {
+        public Player(string name)
+        {
+            this.name = name;
+            Score = 0;
+        }
+
+        private readonly string name;
+
+        public int Score
+        {
+            get;
+            private set;
+        }
+
+        public void Scores()
+        {
+            Score++;
         }
     }
 
     public class Referee
     {
-        public Scoring Scores(int player1Score, int player2Score)
+        public Scoring Determine(Player player1, Player player2)
         {
-            if (Draw(player1Score, player2Score))
+            if (Draw(player1.Score, player2.Score))
             {
-                return new DrawScoring(player1Score, player2Score);
+                return new DrawScoring(player1.Score, player2.Score);
             }
 
-            if (TieBreak(player1Score, player2Score))
+            if (TieBreak(player1.Score, player2.Score))
             {
-                return new TieBreakScoring(player1Score, player2Score);
+                return new TieBreakScoring(player1.Score, player2.Score);
             }
 
-            if (PlayerHasAdvantage(player1Score, player2Score))
+            if (PlayerHasAdvantage(player1.Score, player2.Score))
             {
-                return new WinScoring(player1Score, player2Score);
+                return new WinScoring(player1.Score, player2.Score);
             }
 
-            return new GeneralScore(player1Score, player2Score);
+            return new GeneralScore(player1.Score, player2.Score);
         }
         
         private bool Draw(int player1Score, int player2Score)
