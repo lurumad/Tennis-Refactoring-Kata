@@ -2,81 +2,136 @@ namespace Tennis
 {
     public class TennisGame1 : ITennisGame
     {
-        private int m_score1 = 0;
-        private int m_score2 = 0;
-        private string player1Name;
-        private string player2Name;
+        private int player1Score;
+        private int player2Score;
+        private readonly string player1Name;
+        private readonly string player2Name;
+        private readonly Referee referee;
 
         public TennisGame1(string player1Name, string player2Name)
         {
             this.player1Name = player1Name;
             this.player2Name = player2Name;
+            referee = new Referee();
         }
 
         public void WonPoint(string playerName)
         {
-            if (playerName == "player1")
-                m_score1 += 1;
-            else
-                m_score2 += 1;
+            if (playerName == player1Name)
+                player1Score += 1;
+            else if (playerName == player2Name)
+                player2Score += 1;
         }
 
         public string GetScore()
         {
-            string score = "";
-            var tempScore = 0;
-            if (m_score1 == m_score2)
-            {
-                switch (m_score1)
-                {
-                    case 0:
-                        score = "Love-All";
-                        break;
-                    case 1:
-                        score = "Fifteen-All";
-                        break;
-                    case 2:
-                        score = "Thirty-All";
-                        break;
-                    default:
-                        score = "Deuce";
-                        break;
+            return referee.Scores(player1Score, player2Score).Score();
+        }
+    }
 
-                }
-            }
-            else if (m_score1 >= 4 || m_score2 >= 4)
+    public class Referee
+    {
+        public Scoring Scores(int player1Score, int player2Score)
+        {
+            if (Draw(player1Score, player2Score))
             {
-                var minusResult = m_score1 - m_score2;
-                if (minusResult == 1) score = "Advantage player1";
-                else if (minusResult == -1) score = "Advantage player2";
-                else if (minusResult >= 2) score = "Win for player1";
-                else score = "Win for player2";
+                return new DrawScoring(player1Score, player2Score);
             }
-            else
+
+            if (TieBreak(player1Score, player2Score))
             {
-                for (var i = 1; i < 3; i++)
-                {
-                    if (i == 1) tempScore = m_score1;
-                    else { score += "-"; tempScore = m_score2; }
-                    switch (tempScore)
-                    {
-                        case 0:
-                            score += "Love";
-                            break;
-                        case 1:
-                            score += "Fifteen";
-                            break;
-                        case 2:
-                            score += "Thirty";
-                            break;
-                        case 3:
-                            score += "Forty";
-                            break;
-                    }
-                }
+                return new TieBreakScoring(player1Score, player2Score);
             }
-            return score;
+
+            return new GeneralScore(player1Score, player2Score);
+        }
+        
+        private bool TieBreak(int player1Score, int player2Score)
+        {
+            return player1Score >= 4 || player2Score >= 4;
+        }
+
+        private bool Draw(int player1Score, int player2Score)
+        {
+            return player1Score == player2Score;
+        }
+    }
+
+    public abstract class Scoring
+    {
+        protected Scoring(int player1Score, int player2Score)
+        {
+            this.player1Score = player1Score;
+            this.player2Score = player2Score;
+        }
+
+        protected readonly int player1Score;
+        protected readonly int player2Score;
+        
+        public abstract string Score();
+    }
+    
+    public class DrawScoring : Scoring
+    {
+        public DrawScoring(int player1Score, int player2Score) 
+            : base(player1Score, player2Score)
+        {
+        }
+
+        public override string Score()
+        {
+            return player1Score switch
+            {
+                0 => "Love-All",
+                1 => "Fifteen-All",
+                2 => "Thirty-All",
+                _ => "Deuce"
+            };
+        }
+    }
+
+    public class TieBreakScoring : Scoring
+    {
+        public TieBreakScoring(int player1Score, int player2Score) 
+            : base(player1Score, player2Score)
+        {
+        }
+
+        public override string Score()
+        {
+            return (player1Score - player2Score) switch
+            {
+                1 => "Advantage player1",
+                -1 => "Advantage player2",
+                >= 2 => "Win for player1",
+                _ => "Win for player2"
+            };
+        }
+    }
+    
+    public class GeneralScore : Scoring
+    {
+        public GeneralScore(int player1Score, int player2Score) 
+            : base(player1Score, player2Score)
+        {
+        }
+
+        public override string Score()
+        {
+            return $"{RunningScore(player1Score)}-{RunningScore(player2Score)}";
+        }
+        
+        private string RunningScore(int score)
+        {
+            return score switch
+            {
+                0 => "Love",
+                1 => "Fifteen",
+                2 => "Thirty",
+                _ => "Forty"
+            };
         }
     }
 }
+
 
