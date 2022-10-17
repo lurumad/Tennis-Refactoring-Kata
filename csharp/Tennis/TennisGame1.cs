@@ -6,15 +6,11 @@ namespace Tennis
     {
         private readonly Player player1;
         private readonly Player player2;
-        private readonly string player1Name;
-        private readonly string player2Name;
         private readonly Referee referee;
 
         public TennisGame1(string player1Name, string player2Name)
         {
-            this.player1Name = player1Name;
             player1 = new Player(player1Name);
-            this.player2Name = player2Name;
             player2 = new Player(player2Name);
             referee = new Referee();
         }
@@ -57,76 +53,70 @@ namespace Tennis
         {
             Score++;
         }
+
+        public bool Draw(Player player)
+        {
+            return Score == player.Score;
+        }
+        
+        public bool PlayerHasAdvantage(Player player)
+        {
+            return Score >= 4 || player.Score >= 4;
+        }
+
+        public bool TieBreak(Player player)
+        {
+            return 
+                PlayerHasAdvantage(player) && 
+                PlayerIsAheadByOnePoint(player);
+        }
+        
+        private bool PlayerIsAheadByOnePoint(Player player)
+        {
+            return Math.Abs(Score - player.Score) == 1;
+        }
     }
 
     public class Referee
     {
         public Scoring Determine(Player player1, Player player2)
         {
-            if (Draw(player1.Score, player2.Score))
+            if (player1.Draw(player2))
             {
-                return new DrawScoring(player1.Score, player2.Score);
+                return new DrawScoring(player1, player2);
             }
 
-            if (TieBreak(player1.Score, player2.Score))
+            if (player1.TieBreak(player2))
             {
-                return new TieBreakScoring(player1.Score, player2.Score);
+                return new TieBreakScoring(player1, player2);
             }
 
-            if (PlayerHasAdvantage(player1.Score, player2.Score))
+            if (player1.PlayerHasAdvantage(player2))
             {
-                return new WinScoring(player1.Score, player2.Score);
+                return new WinScoring(player1, player2);
             }
 
-            return new GeneralScore(player1.Score, player2.Score);
-        }
-        
-        private bool Draw(int player1Score, int player2Score)
-        {
-            return player1Score == player2Score;
-        }
-        
-        private bool TieBreak(int player1Score, int player2Score)
-        {
-            return PlayerHasAdvantage(player1Score, player2Score) 
-                && PlayerIsAheadByOnePoint(player1Score, player2Score);
-        }
-
-        private bool PlayerHasAdvantage(int player1Score, int player2Score)
-        {
-            return player1Score >= 4 || player2Score >= 4;
-        }
-
-        private bool PlayerIsAheadByOnePoint(int player1Score, int player2Score)
-        {
-            return Math.Abs(player1Score - player2Score) == 1;
+            return new GeneralScore(player1, player2);
         }
     }
 
     public abstract class Scoring
     {
-        protected Scoring(int player1Score, int player2Score)
-        {
-            this.player1Score = player1Score;
-            this.player2Score = player2Score;
-        }
-
-        protected readonly int player1Score;
-        protected readonly int player2Score;
-        
         public abstract string Score();
     }
     
     public class DrawScoring : Scoring
     {
-        public DrawScoring(int player1Score, int player2Score) 
-            : base(player1Score, player2Score)
+        private readonly Player player1;
+
+        public DrawScoring(Player player1, Player player2)
         {
+            this.player1 = player1;
         }
 
         public override string Score()
         {
-            return player1Score switch
+            return player1.Score switch
             {
                 0 => "Love-All",
                 1 => "Fifteen-All",
@@ -138,14 +128,18 @@ namespace Tennis
 
     public class TieBreakScoring : Scoring
     {
-        public TieBreakScoring(int player1Score, int player2Score) 
-            : base(player1Score, player2Score)
+        private readonly Player player1;
+        private readonly Player player2;
+
+        public TieBreakScoring(Player player1, Player player2)
         {
+            this.player2 = player2;
+            this.player1 = player1;
         }
 
         public override string Score()
         {
-            return player1Score > player2Score
+            return player1.Score > player2.Score
                 ? "Advantage player1"
                 : "Advantage player2";
         }
@@ -153,14 +147,18 @@ namespace Tennis
     
     public class WinScoring : Scoring
     {
-        public WinScoring(int player1Score, int player2Score) 
-            : base(player1Score, player2Score)
+        private readonly Player player1;
+        private readonly Player player2;
+
+        public WinScoring(Player player1, Player player2)
         {
+            this.player2 = player2;
+            this.player1 = player1;
         }
 
         public override string Score()
         {
-            return player1Score > player2Score
+            return player1.Score > player2.Score
                 ? "Win for player1"
                 : "Win for player2";
         }
@@ -168,14 +166,18 @@ namespace Tennis
     
     public class GeneralScore : Scoring
     {
-        public GeneralScore(int player1Score, int player2Score) 
-            : base(player1Score, player2Score)
+        private readonly Player player1;
+        private readonly Player player2;
+
+        public GeneralScore(Player player1, Player player2)
         {
+            this.player2 = player2;
+            this.player1 = player1;
         }
 
         public override string Score()
         {
-            return $"{RunningScore(player1Score)}-{RunningScore(player2Score)}";
+            return $"{RunningScore(player1.Score)}-{RunningScore(player2.Score)}";
         }
         
         private string RunningScore(int score)
